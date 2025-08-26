@@ -1,3 +1,4 @@
+# Load required libraries
 
 library(phylobase)
 library(ape)
@@ -5,17 +6,14 @@ library(openxlsx)
 library(treeio)
 library(ggtree)
 library(ggplot2)
-library(ggplot2)
 library(dplyr)
 library(khroma)
-library(treeio)
 library(tidyselect)
 
 
 
 ###### MUNIDOPSIDAE ######
 setwd("/Users/catalinamerino/RP2/Molecular analysis/munidopsidae IQTree")
-list.files()
 
 #OUTGROUP PETROLISTHES
 Munidopsis_16S <- read.iqtree("Nucleotide_alignment_Munidopsidae_16S_MAFFT4_129_seq_other_outgroup.fasta.treefile")
@@ -247,12 +245,11 @@ plot(a)
 
 
 
-######Xylo######
-list.files()
+
+######Xylophagaidae tree######
 setwd("/Users/catalinamerino/RP2/Molecular analysis")
 
-
-
+# Load required libraries
 library(ggtree)
 library(ape)
 library(ggtree)
@@ -307,22 +304,10 @@ ggsave("Xylo18S_28S.pdf", plot = p, width = 8, height = 12, units = "in")
 
 
 
-##list of taxa 
-# Get all tip labels
-all_tip_labels <- Xylo18S_28S@phylo$tip.label
-print(all_tip_labels)
-
-# Write to a file
-writeLines(all_tip_labels, "all_tip_labels.txt")
 
 
+######Thyasiridae tree ######
 
-
-
-
-
-######Thyasiridae ######
-list.files()
 setwd("/Users/catalinamerino/RP2/Molecular analysis")
 
 
@@ -367,21 +352,3 @@ print(m)
 
 # Save as PDF
 ggsave("Thyas18S_phylogeny.pdf", plot = m, width = 8, height = 12, units = "in")
-
-
-
-
-
-
-
-
-
-
-
-##list of taxa 
-# Get all tip labels
-all_tip_labels <- Thyas18S@phylo$tip.label
-print(all_tip_labels)
-
-# Write to a file
-writeLines(all_tip_labels, "all_tip_labels.txt")
