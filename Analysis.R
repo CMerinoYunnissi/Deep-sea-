@@ -1,6 +1,10 @@
 
 
-####QUALITATIVE PLOT####
+####Figure 4: macrofauna in experiment site####
+
+# Description: Generates three plots showing macrofauna distribution by phylum, arthropod subgroup, and polychaete families.
+
+#load required packages#
 
 library(dplyr)
 library(ggplot2)
@@ -8,8 +12,8 @@ library(extrafont)
 library(cowplot)
 library(patchwork)
 
-setwd("/Users/catalinamerino/RP2")
-list.files()
+# Set working directory and load data
+setwd("/Users/catalinamerino/RP2") #insert your working directory
 
 data2 <- read.csv(file = "JC257_Whale_Wood_experiment_data.csv", header = TRUE)
 
@@ -32,6 +36,7 @@ phyla_colors <- c(
   "Nemertea" = "#393b79"        # Dark blue (for ribbon worms)
 )
 
+#PLOT 1: Macrofauna by Phylum
 
 plot_1 <- data2 %>%
   mutate(X._indiv = suppressWarnings(as.numeric(X._indiv))) %>%
@@ -64,9 +69,8 @@ plot_1
 
 
 
+#PLOT 2: Arthropoda Breakdown
 
-
-# Arthropoda plots (no legend)
 arthro_data <- data2 %>%
   filter(Phylum == "Arthropoda") %>%
   mutate(X._indiv = suppressWarnings(as.numeric(X._indiv))) %>%
@@ -89,6 +93,7 @@ combined_arthro <- bind_rows(
 ) %>%
   arrange(desc(total)) %>%
   mutate(group = factor(group, levels = group))
+
 # Define orange tones (light to dark)
 arthropoda_colors <- c(
   "#FFD79B",  # Light orange
@@ -97,7 +102,6 @@ arthropoda_colors <- c(
   "#E67E22",  # Dark orange (classic Arthropoda color)
   "#D35400"   # Deep orange
 )
-
 
 
 plot_2 <- combined_arthro %>%
@@ -128,8 +132,8 @@ plot_2
 
 
 
+# PLOT 3: Polychaeta Breakdown
 
-# Polychaete plots (no legend)
 polychaete_data <- data2 %>%
   filter(Class == "Polychaeta") %>%
   mutate(X._indiv = suppressWarnings(as.numeric(X._indiv))) %>%
@@ -165,7 +169,7 @@ poly_colors <- c(
   "#52B788", "#74C476", "#95D5B2",  # Medium greens
   "#B7E4C7", "#D8F3DC", "#E5F5E0",  # Light greens
   "#F6E8C3",                        # Beige for "Other"
-  "gray80"                           # Gray for rare families
+  "gray80"                          # Gray for rare families
 )
 
 plot_3 <- summary_poly_clean %>%
@@ -196,6 +200,8 @@ plot_3 <- summary_poly_clean %>%
   )
 plot_3
 
+
+
 # Add titles to each plot
 plot_1 <- plot_1 + 
   ggtitle("A Phylum") +
@@ -215,6 +221,7 @@ combined_plot <- (plot_1 / plot_2 / plot_3) +
 
 combined_plot
 
+
 library(showtext)
 
 # Register Calibri font family
@@ -229,8 +236,10 @@ font_add(
 # Enable showtext
 showtext_auto()
 
+
+#Save file 
 ggsave(
-  filename = "Figure_5.pdf",
+  filename = "Figure_4.pdf",
   plot = combined_plot,
   device = "pdf",   # no Cairo needed
   width = 7, height = 12, units = "in"
@@ -243,21 +252,38 @@ ggsave(
 
 
 
+
+
+
+
+
+
+####Figure 6: macrofauna in sediment####
+
+
+#load required packages#
 library(ggplot2)
 library(dplyr)
+library(tidyverse)
+library(scales)
+library(patchwork)
+library(viridis)
+library(RColorBrewer)
 
-setwd("/Users/catalinamerino/RP2")
-list.files()
-
-#QUANTITATIVE
-
-#import downloaded 
+# Set working directory and load data
+setwd("/Users/catalinamerino/RP2") #insert your working directory
 data <- read.csv(file = "sediment ID_CMY.csv", header = TRUE)
 
-colnames(data)
 
+
+
+# Data cleaning and preprocessing
+# Remove Foraminifera
 data <- data %>%
-  filter(Phylum != "Foraminifera") %>%
+  filter(Phylum != "Foraminifera")
+
+# Fill missing Polychaeta families
+data <- data %>%
   mutate(Family..or.higher. = ifelse(
     Class.or.order == "Polychaeta" & 
       (is.na(Family..or.higher.) | trimws(Family..or.higher.) == ""),
@@ -265,24 +291,12 @@ data <- data %>%
     Family..or.higher.
   ))
 
-
-
-
-####Combined plot of proportion and density####
-
-library(patchwork)
-library(tidyverse)
-library(scales)
-library(patchwork)
-library(viridis)
-library(RColorBrewer)
-
-# Data Preparation 
+# Rename and mutate key columns
 data_clean <- data %>%
   rename(
-    abundance = `X._indiv`,
-    taxon_rank = `Class.or.order`,
-    family = `Family..or.higher.`
+    abundance = X._indiv,
+    taxon_rank = Class.or.order,
+    family = Family..or.higher.
   ) %>%
   mutate(
     Distance = factor(Distance, levels = sort(unique(Distance))),
@@ -293,14 +307,17 @@ data_clean <- data %>%
     )
   )
 
-# Filtered dataset (sensu stricto, no meiofauna)
+# Exclude meiofauna for "sensu stricto" dataset
 data_sensustricto <- data_clean %>%
   filter(
     !Phylum %in% c("Kinorhyncha", "Nematoda"),
     !taxon_rank %in% c("Acari", "Copepoda", "Arachnida", "Ostracoda")
   )
 
-# Theme Setup 
+
+# Plotting theme and colors
+
+# Custom theme for scientific plots
 sci_theme <- theme_minimal(base_size = 10) +
   theme(
     axis.title = element_text(size = 10),
@@ -314,7 +331,7 @@ sci_theme <- theme_minimal(base_size = 10) +
     plot.margin = margin(5, 5, 5, 5, "pt")
   )
 
-# Color Palettes 
+# Phylum-level colors
 phyla_colors <- c(
   "Annelida" = "#2ca02c",
   "Arthropoda" = "#ff7f0e",
@@ -326,6 +343,7 @@ phyla_colors <- c(
 )
 
 
+# Arthropod sub-groups colors
 arthropod_colors <- c(
   "Amphipoda" = "#FFD79B",          # Light orange
   "Ostracoda" = "#FFB347",          # Medium orange
@@ -337,14 +355,16 @@ arthropod_colors <- c(
   "Arthropoda indet." = "#7f7f7f"   # Medium gray
 )
 
+# Polychaete families colors
 polychaete_colors <- c(
   "#1B4332", "#40916C", "#52B788", "#95D5B2",
   "#B7E4C7", "#D8F3DC", "#2ca02c"
 )
 
 
+## Generate Plots (Panels A to H)
 
-# Panel A & B: Overall Community
+# Panel A: Relative abundance by phylum
 panel_A <- data_clean %>%
   filter(abundance > 0) %>%
   group_by(Distance, Phylum) %>%
@@ -366,7 +386,9 @@ panel_A <- data_clean %>%
   )
 panel_A 
 
-# Panel B: Abundance plot
+
+
+# Panel B: Total abundance by phylum
 panel_B <- data_clean %>%
   filter(abundance > 0) %>%
   group_by(Distance, Phylum) %>%
@@ -385,7 +407,7 @@ panel_B <- data_clean %>%
   )
 panel_B
 
-# Panel C: sensu stricto relative abundance
+# Panel C: Relative abundance (sensu stricto)
 panel_C <- data_sensustricto %>%
   filter(abundance > 0) %>%
   group_by(Distance, Phylum) %>%
@@ -408,7 +430,7 @@ panel_C <- data_sensustricto %>%
   )
 panel_C
 
-# Panel D: sensu stricto abundance
+# Panel D: Total abundance (sensu stricto)
 panel_D <- data_sensustricto %>%
   filter(abundance > 0) %>%
   group_by(Distance, Phylum) %>%
@@ -427,7 +449,7 @@ panel_D <- data_sensustricto %>%
   )
 panel_D
 
-# Panel E: Arthropods relative abundance
+# Panel E: Relative abundance of arthropods
 panel_E <- data_clean %>%
   filter(
     abundance > 0,
@@ -454,7 +476,7 @@ panel_E <- data_clean %>%
   )
 panel_E
 
-# Panel F: Arthropods abundance
+# Panel F: Total abundance of arthropods
 panel_F <- data_clean %>%
   filter(
     abundance > 0,
@@ -505,7 +527,7 @@ panel_G <- data_clean %>%
   )
 panel_G
 
-# Panel H: Polychaetes abundance
+# Panel G: Relative abundance of polychaetes
 panel_H <- data_clean %>%
   filter(
     abundance > 0,
@@ -580,12 +602,16 @@ ggsave(
 
 
 
+#### Figure 8: Community Composition Analysis (NMDS & PERMANOVA)####
+# Load required libraries
 
+library(dplyr)
+library(tidyr)
+library(vegan)
+library(ggplot2)
+library(tibble)  # for column_to_rownames()
 
-colnames(data_clean)
-unique(data_clean$Sub.sample.number)
-
-####NMDS PLOT####
+# 1️⃣ Create Community Matrix (Phylum-level)
 
 comm_matrix <- data_clean %>%
   # Replace empty or NA Phylum with "Unknown"
@@ -615,6 +641,7 @@ nmds <- metaMDS(comm_matrix %>% select(-Sub.sample.number),
 
 # Check stress
 nmds$stress
+
 # Compute stress
 stress_value <- round(nmds$stress, 3)
 
@@ -650,15 +677,7 @@ ggsave("Figure_8.pdf", plot = nmds_plot, width = 8, height = 6, dpi = 300)
 
 
 
-####PERMANOVA####
-
-
-rm(comm_mat)
-rm(comm_matrix)
-library(dplyr)
-library(vegan)
-
-
+#PERMANOVA#
 # Make sure Phylum is filled
 comm_matrix <- data_clean %>%
   mutate(Phylum = ifelse(is.na(Phylum) | Phylum == "", "Unknown", Phylum)) %>%
@@ -704,9 +723,6 @@ sample_info_ordered <- sample_info %>%
 # Create group vector
 group <- sample_info_ordered$Distance
 
-# Verify alignment
-all(rownames(comm_mat) == sample_info_ordered$Sub.sample.number)
-
 
 
 
@@ -722,86 +738,6 @@ set.seed(123)
 permanova_result <- adonis2(comm_mat ~ group, method = "bray", permutations = 999)
 
 # View results
-permanova_result
-
-
-
-
-
-
-#### LOAD LIBRARIES ####
-library(dplyr)
-library(tidyr)
-library(vegan)
-library(ggplot2)
-library(tibble) # for column_to_rownames()
-
-#### 1️⃣ Build a single community matrix ####
-
-comm_mat <- data_clean %>%
-  # Replace missing/empty Phylum with "Unknown"
-  mutate(Phylum = ifelse(is.na(Phylum) | Phylum == "", "Unknown", Phylum)) %>%
-  group_by(Sub.sample.number, Phylum) %>%
-  summarise(abundance = sum(abundance, na.rm = TRUE), .groups = "drop") %>%
-  pivot_wider(
-    names_from = Phylum,
-    values_from = abundance,
-    values_fill = 0
-  ) %>%
-  filter(rowSums(select(., -Sub.sample.number)) > 0) %>%
-  column_to_rownames("Sub.sample.number")
-
-# Metadata
-sample_info <- data_clean %>%
-  select(Sub.sample.number, Distance) %>%
-  distinct() %>%
-  filter(Sub.sample.number %in% rownames(comm_mat)) %>%
-  arrange(match(Sub.sample.number, rownames(comm_mat)))
-
-group <- sample_info$Distance
-
-# Verify alignment
-stopifnot(all(rownames(comm_mat) == sample_info$Sub.sample.number))
-
-
-#### 2️⃣ NMDS ####
-
-set.seed(123) # reproducibility
-nmds <- metaMDS(comm_mat, distance = "bray", k = 2, trymax = 100)
-
-stress_value <- round(nmds$stress, 3)
-
-scores_df <- as.data.frame(scores(nmds, display = "sites")) %>%
-  tibble::rownames_to_column("Sub.sample.number") %>%
-  left_join(sample_info, by = "Sub.sample.number")
-
-# NMDS plot
-nmds_plot <- ggplot(scores_df, aes(x = NMDS1, y = NMDS2, color = Distance)) +
-  geom_point(size = 3) +
-  theme_minimal() +
-  labs(
-    color = "Distance",
-    title = paste0("NMDS Plot (Stress = ", stress_value, ")")
-  ) +
-  theme(plot.title = element_text(hjust = 0.5))
-
-nmds_plot
-
-ggsave("Figure_8.pdf", plot = nmds_plot, width = 8, height = 6, dpi = 300)
-
-
-#### 3️⃣ PERMANOVA ####
-
-# Bray-Curtis distance
-bray_dist <- vegdist(comm_mat, method = "bray")
-
-# Check homogeneity of multivariate dispersion
-dispersion <- betadisper(bray_dist, group)
-anova(dispersion)  # p > 0.05 means variances are homogeneous
-
-# Run PERMANOVA
-set.seed(123)
-permanova_result <- adonis2(comm_mat ~ group, method = "bray", permutations = 999)
 permanova_result
 
 
