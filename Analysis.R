@@ -647,7 +647,7 @@ stress_value <- round(nmds$stress, 3)
 
 # 4️⃣ Extract NMDS scores and join metadata
 
-scores_df <- as.data.frame(scores(nmds, display = "sites"))
+scores_df <- as.data.frame(vegan::scores(nmds, display = "sites"))
 scores_df$Sub.sample.number <- comm_matrix$Sub.sample.number
 scores_df <- dplyr::left_join(scores_df, sample_info, by = "Sub.sample.number")
 
@@ -678,54 +678,28 @@ ggsave("Figure_8.pdf", plot = nmds_plot, width = 8, height = 6, dpi = 300)
 
 
 #PERMANOVA#
-# Make sure Phylum is filled
-comm_matrix <- data_clean %>%
-  mutate(Phylum = ifelse(is.na(Phylum) | Phylum == "", "Unknown", Phylum)) %>%
-  group_by(Sub.sample.number, Phylum) %>%
-  summarise(abundance = sum(abundance, na.rm = TRUE), .groups = "drop") %>%
-  pivot_wider(names_from = Phylum, values_from = abundance, values_fill = 0)
 
-# Keep only rows with at least one non-zero abundance
-comm_matrix <- comm_matrix %>%
-  filter(rowSums(select(., -Sub.sample.number)) > 0)
+# 1️⃣ Make sure your community matrix and metadata align
+# rows = sites (Sub.sample.number), columns = phyla
+comm_data <- comm_matrix %>% 
+  select(-Sub.sample.number)
 
-# Prepare metadata
-sample_info <- data_clean %>%
-  select(Sub.sample.number, Distance) %>%
-  distinct()
+# Ensure metadata is aligned with the same order of samples
+meta <- sample_info %>% 
+  filter(Sub.sample.number %in% comm_matrix$Sub.sample.number) %>%
+  arrange(match(Sub.sample.number, comm_matrix$Sub.sample.number))
 
+# 2️⃣ Run PERMANOVA
+set.seed(123)  # reproducibility
+permanova <- adonis2(comm_data ~ Distance, 
+                     data = meta, 
+                     method = "bray")
 
-# Ensure both are character
-comm_matrix$Sub.sample.number <- as.character(comm_matrix$Sub.sample.number)
-sample_info$Sub.sample.number <- as.character(sample_info$Sub.sample.number)
-
-# Remove empty samples from sample_info
-sample_info <- sample_info %>% filter(Sub.sample.number != "")
-
-# Keep only common samples
-common_samples <- intersect(comm_matrix$Sub.sample.number, sample_info$Sub.sample.number)
-
-# Reorder comm_matrix and convert to data.frame
-comm_mat <- comm_matrix %>%
-  filter(Sub.sample.number %in% common_samples) %>%
-  arrange(match(Sub.sample.number, common_samples)) %>%
-  as.data.frame()
-
-# Set row names
-rownames(comm_mat) <- comm_mat$Sub.sample.number
-comm_mat$Sub.sample.number <- NULL
-
-# Reorder sample_info to match comm_mat
-sample_info_ordered <- sample_info %>%
-  filter(Sub.sample.number %in% common_samples) %>%
-  arrange(match(Sub.sample.number, rownames(comm_mat)))
-
-# Create group vector
-group <- sample_info_ordered$Distance
+# 3️⃣ View results
+print(permanova)
 
 
-
-
+# 4️⃣ Check homogeneity of dispersion (PERMDISP)
 # Calculate Bray-Curtis distance
 bray_dist <- vegdist(comm_mat, method = "bray")
 
@@ -733,11 +707,8 @@ bray_dist <- vegdist(comm_mat, method = "bray")
 dispersion <- betadisper(bray_dist, group)
 anova(dispersion)  # if p > 0.05, variances are homogeneous
 
-# Run PERMANOVA
-set.seed(123)
-permanova_result <- adonis2(comm_mat ~ group, method = "bray", permutations = 999)
 
-# View results
+
 permanova_result
 
 
